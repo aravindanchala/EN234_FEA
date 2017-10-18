@@ -152,7 +152,8 @@
 
       RHS(1:MLVARX,1) = 0.d0
       AMATRX(1:NDOFEL,1:NDOFEL) = 0.d0
-
+     	SVARS(1:NSVARS) = 0.d0
+      
       D = 0.d0
       E = PROPS(1)
       xnu = PROPS(2)
@@ -196,7 +197,7 @@
      1   + 0.5D0*dot_product(stress,strain)*w(kint)*determinant           ! Store the elastic strain energy
 
      
-     	SVARS(1:NSVARS) = 0.d0
+
      
         if (NSVARS>=n_points*4) then   ! Store stress at each integration point (if space was allocated to do so)
             SVARS(4*kint-3:4*kint) = stress(1:4)
