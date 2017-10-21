@@ -97,12 +97,15 @@
       integer      :: face_node_list(3)                       ! List of nodes on an element face
     !
       double precision  ::  xi(2,9)                          ! Area integration points
+      double precision  ::  xi_0(2)                          ! Area integration points
       double precision  ::  w(9)                             ! Area integration weights
       double precision  ::  N(9)                             ! 2D shape functions
       double precision  ::  dNdxi(9,2)                       ! 2D shape function derivatives
+      double precision  ::  dNdxi_0(9,2)                       ! 2D shape function derivatives
       double precision  ::  dNdx(9,2)                        ! Spatial derivatives
       double precision  ::  dxdxi(2,2)                       ! Derivative of spatial coords wrt normalized coords
-
+      double precision  ::  dxdxi_0(2,2)                       ! Derivative of spatial coords wrt normalized coords at origin
+  
     !   Variables below are for computing integrals over element faces
       double precision  ::  face_coords(2,3)                  ! Coords of nodes on an element face
       double precision  ::  xi1(6)                            ! 1D integration points
@@ -116,14 +119,17 @@
       double precision  ::  stress(4)                         ! Stress vector contains [s11, s22, s33, s12, s13, s23]
       double precision  ::  D(4,4)                            ! stress = D*(strain)  (NOTE FACTOR OF 2 in shear strain)
       double precision  ::  B(4,16)                           ! strain = B*(dof_total)
-      !double precision  ::  ktemp(22,22)                      ! Temporary stiffness (for incompatible mode elements)
-      !double precision  ::  rhs_temp(22)                      ! Temporary RHS vector (for incompatible mode elements)
-      !double precision  ::  kuu(18,18)                        ! Upper diagonal stiffness
-      !double precision  ::  kaa(4,4),kaainv(4,4)              ! Lower diagonal stiffness
-      !double precision  ::  kau(4,18)                         ! Lower quadrant of stiffness
-      !double precision  ::  kua(18,4)                         ! Upper quadrant of stiffness
-      !double precision  ::  alpha(4)                          ! Internal DOF for incompatible mode element
+      double precision  ::  Ba(2,2)                           ! for  Augmentation of  B
+      double precision  ::  Utemp(22)                         ! U including alphas
+      double precision  ::  ktemp(22,22)                      ! Temporary stiffness (for incompatible mode elements)
+      double precision  ::  rhs_temp(22)                      ! Temporary RHS vector (for incompatible mode elements)
+      double precision  ::  kuu(18,18)                        ! Upper diagonal stiffness
+      double precision  ::  kaa(4,4),kaainv(4,4)              ! Lower diagonal stiffness
+      double precision  ::  kau(4,18)                         ! Lower quadrant of stiffness
+      double precision  ::  kua(18,4)                         ! Upper quadrant of stiffness
+      double precision  ::  alpha(4)                          ! Internal DOF for incompatible mode element
       double precision  ::  dxidx(2,2), determinant, det0     ! Jacobian inverse and determinant
+      double precision  ::  dxidx_0(2,2)                      ! Jacobian inverse and determinant
       double precision  ::  E, xnu, D44, D11, D12             ! Material properties
 
     !
@@ -153,6 +159,17 @@
       RHS(1:MLVARX,1) = 0.d0
       AMATRX(1:NDOFEL,1:NDOFEL) = 0.d0
      	SVARS(1:NSVARS) = 0.d0
+      Ba = 0.d0
+      alpha = 0.d0
+      ktemp = 0.d0
+      kuu = 0.d0
+      kau = 0.d0
+      kaa = 0.d0 
+      kua = 0.d0
+      rhs_temp = 0.d0
+      xi_0 = 0.d0
+      Utemp = 0.d0
+      dxdxi_0 = 0.d0
       
       D = 0.d0
       E = PROPS(1)
@@ -170,28 +187,41 @@
       ENERGY(1:8) = 0.d0
 
     !     --  Loop over integration points
+      
+      
+      if (JTYPE==1) then
+      
+      
       do kint = 1, n_points
-        call abq_UEL_2D_shapefunctions(xi(1:2,kint),NNODE,N,dNdxi)
+          
+      call abq_UEL_2D_shapefunctions(xi(1:2,kint),NNODE,N,dNdxi)
+      
         dxdxi = matmul(coords(1:2,1:NNODE),dNdxi(1:NNODE,1:2))
+        
         call abq_inverse_LU(dxdxi,dxidx,2,determinant)
+        
         dNdx(1:NNODE,1:2) = matmul(dNdxi(1:NNODE,1:2),dxidx)
+        
+
+        
         B = 0.d0
         B(1,1:2*NNODE-1:2) = dNdx(1:NNODE,1)
         B(2,2:2*NNODE:2) = dNdx(1:NNODE,2)
         B(4,1:2*NNODE-1:2) = dNdx(1:NNODE,2)
         B(4,2:2*NNODE:2) = dNdx(1:NNODE,1)
-       
-
         strain = matmul(B(1:4,1:2*NNODE),U(1:2*NNODE))
-
+                        
         stress = matmul(D,strain)
         RHS(1:2*NNODE,1) = RHS(1:2*NNODE,1)
      1   - matmul(transpose(B(1:4,1:2*NNODE)),stress(1:4))*
      2                                          w(kint)*determinant
+      
 
-        AMATRX(1:2*NNODE,1:2*NNODE) = AMATRX(1:2*NNODE,1:2*NNODE)
+        AMATRX(1:2*NNODE,1:2*NNODE) = AMATRX(1:2*NNODE,1:2*NNODE)   
      1  + matmul(transpose(B(1:4,1:2*NNODE)),matmul(D,B(1:4,1:2*NNODE)))
      2                                             *w(kint)*determinant
+        
+        
 
         ENERGY(2) = ENERGY(2)
      1   + 0.5D0*dot_product(stress,strain)*w(kint)*determinant           ! Store the elastic strain energy
@@ -203,7 +233,112 @@
             SVARS(4*kint-3:4*kint) = stress(1:4)
         endif
       end do
+      
+            
+      elseif (JTYPE==2) then
+         
+          
+          
+      do kint = 1, n_points  
+         
+          call abq_UEL_2D_shapefunctions(xi(1:2,kint),NNODE,N,dNdxi)
+         call abq_UEL_2D_shapefunctions(xi_0(1:2),NNODE,N,dNdxi_0) 
+          
+          dxdxi = matmul(coords(1:2,1:NNODE),dNdxi(1:NNODE,1:2))
+        dxdxi_0 = matmul(coords(1:2,1:NNODE),dNdxi_0(1:NNODE,1:2)) 
+        
+          call abq_inverse_LU(dxdxi,dxidx,2,determinant)
+        call abq_inverse_LU(dxdxi_0,dxidx_0,2,det_0)
+        
+        dNdx(1:NNODE,1:2) = matmul(dNdxi(1:NNODE,1:2),dxidx)
+        
+          Ba(1,1) = (det_0 / determinant) * xi(1,kint) * dxidx(1,1)
+        Ba(1,2) = (det_0 / determinant) * xi(1,kint) * dxidx(1,2)
+        Ba(2,1) = (det_0 / determinant) * xi(2,kint) * dxidx(2,1)
+        Ba(2,2) = (det_0 / determinant) * xi(2,kint) * dxidx(2,2)
+        
+          
+        B = 0.d0
+        B(1,1:2*NNODE-1:2) = dNdx(1:NNODE,1)
+        B(2,2:2*NNODE:2) = dNdx(1:NNODE,2)
+        B(4,1:2*NNODE-1:2) = dNdx(1:NNODE,2)
+        B(4,2:2*NNODE:2) = dNdx(1:NNODE,1)  
+        ! augmentation of B   
+        B(1,2*NNODE+1:2*NNODE+3:2) = Ba(1:2,1)
+        B(2,2*NNODE+2:2*NNODE+4:2) = Ba(1:2,2)
+        B(4,2*NNODE+1:2*NNODE+3:2) = Ba(1:2,1)
+        B(4,2*NNODE+2:2*NNODE+4:2) = Ba(1:2,2)       
+         
+      ktemp(1:2*NNODE+4,1:2*NNODE+4) = ktemp(1:2*NNODE+4,1:2*NNODE+4)   ! stiffness matrix kel  
+     1 + matmul(transpose(B(1:4,1:2*NNODE+4)),
+     2  matmul(D,B(1:4,1:2*NNODE+4)))*w(kint)*determinant                                   
+     
+      end do
+      
+      kuu(1:2*NNODE,1:2*NNODE) = ktemp(1:2*NNODE,1:2*NNODE)
+      kaa(1:4,1:4) = ktemp(2*NNODE+1:2*NNODE+4,2*NNODE+1:2*NNODE+4)
+       
+      kau(1:4,1:2*NNODE) = ktemp(2*NNODE+1:2*NNODE+4,1:2*NNODE) 
+      kua(1:2*NNODE,1:4) = ktemp(1:2*NNODE,2*NNODE+1:2*NNODE+4)
+      call abq_inverse_LU(kaa,kaainv,4,det_kaa) ! det_kaa is a garbage value here
+      
+      alpha(1:4) = -1.D0*matmul(kaainv(1:4,1:4),
+     1     matmul(kau(1:4,1:2*NNODE),U(1:2*NNODE)))
+      
+      Utemp(1:2*NNODE) = U(1:2*NNODE)
+      Utemp(2*NNODE+1:2*NNODE+4) = alpha(1:4)
+      
+      strain = matmul(B(1:4,1:2*NNODE+4),Utemp(1:2*NNODE+4))
+      stress = matmul(D,strain)
+      
+      do kint = 1, n_points 
+      rhs_temp(1:2*NNODE+4) = rhs_temp(1:2*NNODE+4)
+     1   - matmul(transpose(B(1:4,1:2*NNODE+4)),stress(1:4))*
+     2                                          w(kint)*determinant
+      
+      
+      
+      
+        ENERGY(2) = ENERGY(2)
+     1   + 0.5D0*dot_product(stress,strain)*w(kint)*determinant           ! Store the elastic strain energy
 
+     
+
+     
+        if (NSVARS>=n_points*4) then   ! Store stress at each integration point (if space was allocated to do so)
+            SVARS(4*kint-3:4*kint) = stress(1:4)
+        endif  
+        
+      end do
+      
+      AMATRX(1:2*NNODE,1:2*NNODE) = kuu(1:2*NNODE,1:2*NNODE) 
+     1 - matmul(kua(1:2*NNODE,1:4), 
+     2    matmul(kaainv(1:4,1:4),kau(1:4,1:2*NNODE)))
+      
+      RHS(1:2*NNODE,1) = rhs_temp(1:2*NNODE) - 
+     1 matmul(kua(1:2*NNODE,1:4), 
+     2 matmul(kaainv(1:4,1:4),rhs_temp(2*NNODE:2*NNODE+4)))
+      
+      
+      
+      endif   
+         
+
+
+          
+  
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+      
+      
 
       PNEWDT = 1.d0          ! This leaves the timestep unchanged (ABAQUS will use its own algorithm to determine DTIME)
   
@@ -375,14 +510,16 @@
                 df(2, 2) = 1.D0
                 df(3, 1) = -1.D0
                 df(3, 2) = -1.D0
+                
+
             else if ( n_nodes==4 ) then
                 !     SHAPE FUNCTIONS FOR 4 NODED QUADRILATERAL
                 !     43
                 !     12
-                g1 = 0.5D0*(1.D0 - xi(1))
-                g2 = 0.5D0*(1.D0 + xi(1))
-                h1 = 0.5D0*(1.D0 - xi(2))
-                h2 = 0.5D0*(1.D0 + xi(2))
+                g1 = 0.5D0*(1.D0 - xi(1)) !0.5
+                g2 = 0.5D0*(1.D0 + xi(1)) !0.5
+                h1 = 0.5D0*(1.D0 - xi(2)) !0.5
+                h2 = 0.5D0*(1.D0 + xi(2)) !0.5
                 f(1) = g1*h1
                 f(2) = g2*h1
                 f(3) = g2*h2
@@ -400,6 +537,8 @@
                 df(3, 2) = g2*dh2
                 df(4, 2) = g1*dh2
 
+                
+                
             else if ( n_nodes==6 ) then
 
                 !     SHAPE FUNCTIONS FOR 6 NODED TRIANGLE
@@ -434,6 +573,8 @@
                 df(4, 2) = 4.D0*xi(1)
                 df(5, 2) = 4.D0*z + 4.D0*xi(2)*dzdq
                 df(6, 2) = 4.D0*xi(1)*dzdq
+                
+
 
             else if ( n_nodes==8 ) then
                 !     SHAPE FUNCTIONS FOR 8 NODED SERENDIPITY ELEMENT
@@ -461,23 +602,25 @@
                  df(7,2) = 0.5*(1.-xi(1)*xi(1));
                  df(8,1) = -0.5*(1.-xi(2)*xi(2));
                  df(8,2) = -(1.-xi(1))*xi(2);
+                 
+                 
             else if ( n_nodes==9 ) then
                 !     SHAPE FUNCTIONS FOR 9 NODED LAGRANGIAN ELEMENT
                 !     789
                 !     456
                 !     123
-                g1 = -.5D0*xi(1)*(1.D0 - xi(1))
-                g2 = (1.D0 - xi(1))*(1.D0 + xi(1))
-                g3 = .5D0*xi(1)*(1.D0 + xi(1))
-                h1 = -.5D0*xi(2)*(1.D0 - xi(2))
-                h2 = (1.D0 - xi(2))*(1.D0 + xi(2))
-                h3 = .5D0*xi(2)*(1.D0 + xi(2))
-                dg1 = xi(1) - 0.5d0
-                dg2 = -2.d0*xi(1)
-                dg3 = xi(1) + 0.5d0
-                dh1 = xi(2)-0.5d0
-                dh2 = -2.d0*xi(2)
-                dh3 = xi(2) + 0.5d0
+                g1 = -.5D0*xi(1)*(1.D0 - xi(1)) !0 
+                g2 = (1.D0 - xi(1))*(1.D0 + xi(1)) !1
+                g3 = .5D0*xi(1)*(1.D0 + xi(1)) !0
+                h1 = -.5D0*xi(2)*(1.D0 - xi(2)) !0
+                h2 = (1.D0 - xi(2))*(1.D0 + xi(2)) !1
+                h3 = .5D0*xi(2)*(1.D0 + xi(2)) !0
+                dg1 = xi(1) - 0.5d0 !-0.5
+                dg2 = -2.d0*xi(1) !0
+                dg3 = xi(1) + 0.5d0 !0.5
+                dh1 = xi(2)-0.5d0 !-0.5
+                dh2 = -2.d0*xi(2) !0
+                dh3 = xi(2) + 0.5d0 !0.5
                 f(1) = g1*h1
                 f(2) = g2*h1
                 f(3) = g3*h1
@@ -505,6 +648,8 @@
                 df(8,2) = g2*dh3
                 df(9,1) = dg3*h3
                 df(9,2) = g3*dh3
+                
+      
             end if
 
       end subroutine abq_UEL_2D_shapefunctions
@@ -644,7 +789,7 @@
         implicit none
 
         integer, intent(in)  :: n
-
+        !double precision, intent(in)    :: A_0(n,n)
         double precision, intent(in)    :: Ain(n,n)
         double precision, intent(out)   :: A_inverse(n,n)
         double precision, intent(out) :: determinant
@@ -659,6 +804,7 @@
         b=0.d0
 
         determinant = A(1,1)*A(2,2) - A(2,1)*A(1,2)
+       ! det_0 = A_0(1,1)*A_0(2,2) - A_0(2,1)*A_0(1,2)
         
        ! IF (determinant==0.d0) THEN
         !write(6,*) ' Error in subroutine abq_UEL_LUinverse'
