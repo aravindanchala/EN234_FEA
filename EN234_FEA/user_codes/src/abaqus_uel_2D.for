@@ -237,26 +237,20 @@
             
       elseif (JTYPE==2) then
          
-          
-          
-      do kint = 1, n_points  
+           call abq_UEL_2D_shapefunctions(xi_0(1:2),NNODE,N,dNdxi_0) 
+           dxdxi_0 = matmul(coords(1:2,1:NNODE),dNdxi_0(1:NNODE,1:2))         
+          call abq_inverse_LU(dxdxi_0,dxidx_0,2,det_0)        
+  
+          do kint = 1, n_points  
          
           call abq_UEL_2D_shapefunctions(xi(1:2,kint),NNODE,N,dNdxi)
-         call abq_UEL_2D_shapefunctions(xi_0(1:2),NNODE,N,dNdxi_0) 
-          
           dxdxi = matmul(coords(1:2,1:NNODE),dNdxi(1:NNODE,1:2))
-        dxdxi_0 = matmul(coords(1:2,1:NNODE),dNdxi_0(1:NNODE,1:2)) 
-        
           call abq_inverse_LU(dxdxi,dxidx,2,determinant)
-        call abq_inverse_LU(dxdxi_0,dxidx_0,2,det_0)
+
         
         dNdx(1:NNODE,1:2) = matmul(dNdxi(1:NNODE,1:2),dxidx)
         
-          Ba(1,1) = (det_0 / determinant) * xi(1,kint) * dxidx(1,1)
-        Ba(1,2) = (det_0 / determinant) * xi(1,kint) * dxidx(1,2)
-        Ba(2,1) = (det_0 / determinant) * xi(2,kint) * dxidx(2,1)
-        Ba(2,2) = (det_0 / determinant) * xi(2,kint) * dxidx(2,2)
-        
+       
           
         B = 0.d0
         B(1,1:2*NNODE-1:2) = dNdx(1:NNODE,1)
@@ -264,11 +258,16 @@
         B(4,1:2*NNODE-1:2) = dNdx(1:NNODE,2)
         B(4,2:2*NNODE:2) = dNdx(1:NNODE,1)  
         ! augmentation of B   
-        B(1,2*NNODE+1:2*NNODE+3:2) = Ba(1:2,1)
-        B(2,2*NNODE+2:2*NNODE+4:2) = Ba(1:2,2)
-        B(4,2*NNODE+1:2*NNODE+3:2) = Ba(1:2,1)
-        B(4,2*NNODE+2:2*NNODE+4:2) = Ba(1:2,2)       
-         
+  
+        B(1,2*NNODE+1) = det_0/determinant * xi(1,kint)*dxidx(1,1)
+        B(1,2*NNODE+3) =  det_0/determinant * xi(2,kint)*dxidx(2,1)
+        B(2,2*NNODE+2) = det_0/determinant * xi(1,kint)*dxidx(1,2)
+        B(2,2*NNODE+4) =  det_0/determinant * xi(2,kint)*dxidx(2,2)
+        B(4,2*NNODE+1) = det_0/determinant * xi(1,kint)*dxidx(1,2)
+        B(4,2*NNODE+3) =  det_0/determinant * xi(2,kint)*dxidx(2,2)
+        B(4,2*NNODE+2) = det_0/determinant * xi(1,kint)*dxidx(1,1)
+        B(4,2*NNODE+4) =  det_0/determinant * xi(2,kint)*dxidx(2,1)
+        
       ktemp(1:2*NNODE+4,1:2*NNODE+4) = ktemp(1:2*NNODE+4,1:2*NNODE+4)   ! stiffness matrix kel  
      1 + matmul(transpose(B(1:4,1:2*NNODE+4)),
      2  matmul(D,B(1:4,1:2*NNODE+4)))*w(kint)*determinant                                   
@@ -288,10 +287,42 @@
       Utemp(1:2*NNODE) = U(1:2*NNODE)
       Utemp(2*NNODE+1:2*NNODE+4) = alpha(1:4)
       
-      strain = matmul(B(1:4,1:2*NNODE+4),Utemp(1:2*NNODE+4))
-      stress = matmul(D,strain)
+
       
-      do kint = 1, n_points 
+            
+  
+      do kint = 1, n_points  
+         
+          call abq_UEL_2D_shapefunctions(xi(1:2,kint),NNODE,N,dNdxi)
+          dxdxi = matmul(coords(1:2,1:NNODE),dNdxi(1:NNODE,1:2))
+          call abq_inverse_LU(dxdxi,dxidx,2,determinant)
+
+        
+        dNdx(1:NNODE,1:2) = matmul(dNdxi(1:NNODE,1:2),dxidx)
+        
+       
+          
+        B = 0.d0
+        B(1,1:2*NNODE-1:2) = dNdx(1:NNODE,1)
+        B(2,2:2*NNODE:2) = dNdx(1:NNODE,2)
+        B(4,1:2*NNODE-1:2) = dNdx(1:NNODE,2)
+        B(4,2:2*NNODE:2) = dNdx(1:NNODE,1)  
+        ! augmentation of B   
+  
+        B(1,2*NNODE+1) = det_0/determinant * xi(1,kint)*dxidx(1,1)
+        B(1,2*NNODE+3) =  det_0/determinant * xi(2,kint)*dxidx(2,1)
+        B(2,2*NNODE+2) = det_0/determinant * xi(1,kint)*dxidx(1,2)
+        B(2,2*NNODE+4) =  det_0/determinant * xi(2,kint)*dxidx(2,2)
+        B(4,2*NNODE+1) = det_0/determinant * xi(1,kint)*dxidx(1,2)
+        B(4,2*NNODE+3) =  det_0/determinant * xi(2,kint)*dxidx(2,2)
+        B(4,2*NNODE+2) = det_0/determinant * xi(1,kint)*dxidx(1,1)
+        B(4,2*NNODE+4) =  det_0/determinant * xi(2,kint)*dxidx(2,1)  
+          
+          
+          
+             strain = matmul(B(1:4,1:2*NNODE+4),Utemp(1:2*NNODE+4))
+      stress = matmul(D,strain)   
+          
       rhs_temp(1:2*NNODE+4) = rhs_temp(1:2*NNODE+4)
      1   - matmul(transpose(B(1:4,1:2*NNODE+4)),stress(1:4))*
      2                                          w(kint)*determinant
@@ -317,7 +348,7 @@
       
       RHS(1:2*NNODE,1) = rhs_temp(1:2*NNODE) - 
      1 matmul(kua(1:2*NNODE,1:4), 
-     2 matmul(kaainv(1:4,1:4),rhs_temp(2*NNODE:2*NNODE+4)))
+     2 matmul(kaainv(1:4,1:4),rhs_temp(2*NNODE+1:2*NNODE+4)))
       
       
       
