@@ -251,13 +251,27 @@
 !
 !     Local variables
 
-      double precision E,xnu
+      double precision E,xnu,G, Kb, e0, pt ,k
+      double precision  :: ekk     ! trace of the strain 
+      double precision  :: M1(6,6) 
+      double precision  :: M2(6,6) 
       integer i,j
 
       ddsdde = 0.d0
-
-      E = props(1)
+      ekk =0.d0
+      G = 0.d0
+      M1 = 0.d0
+      M2 = 0.d0
+      Kb = 0.d0
+      e0 =0.d0
+      pt = 0.d0
+      k = 0.d0
+      G = props(1)
       xnu = props(2)
+      e0 = props(3)
+      pt = props(4)
+      k = pt*(1+e0)*((1-2*xnu)/(1+xnu))
+      !G = E/ (2*(1+xnu))
 
 !    for debugging, you can use
 !      write(6,*) ' Hello '
@@ -283,19 +297,41 @@
          ddsdde(3,3) = 0.5d0*(1.d0-xnu)
          ddsdde = ddsdde*E/( (1.d0+xnu*xnu) )
       else ! 3D
-         ddsdde(1,1) = 1.d0-xnu
-         ddsdde(1,2) = xnu
-         ddsdde(1,3) = xnu
-         ddsdde(2,1) = xnu
-         ddsdde(2,2) = 1.d0-xnu
-         ddsdde(2,3) = xnu
-         ddsdde(3,1) = xnu
-         ddsdde(3,2) = xnu
-         ddsdde(3,3) = 1.d0-xnu
-         ddsdde(4,4) = 0.5d0*(1.d0-2.d0*xnu)
-         ddsdde(5,5) = ddsdde(4,4)
-         ddsdde(6,6) = ddsdde(4,4)
-         ddsdde = ddsdde*E/( (1.d0+xnu)*(1.d0-2.d0*xnu) )
+         !ddsdde(1,1) = 1.d0-xnu
+         !ddsdde(1,2) = xnu
+         !ddsdde(1,3) = xnu
+         !ddsdde(2,1) = xnu
+         !ddsdde(2,2) = 1.d0-xnu
+         !ddsdde(2,3) = xnu
+         !ddsdde(3,1) = xnu
+         !ddsdde(3,2) = xnu
+         !ddsdde(3,3) = 1.d0-xnu
+         !ddsdde(4,4) = 0.5d0*(1.d0-2.d0*xnu)
+         !ddsdde(5,5) = ddsdde(4,4)
+         !ddsdde(6,6) = ddsdde(4,4)
+         !ddsdde = ddsdde*E/( (1.d0+xnu)*(1.d0-2.d0*xnu) )
+          do k = 1,ndi 
+              
+             ekk = ekk + stran(k)
+          end do
+          
+         M1(1,1) = 2.d0
+         M1(2,2) = 2.d0
+         M1(3,3) = 2.d0
+         M1(4,4) = 1.d0
+         M1(5,5) = 1.d0
+         M1(6,6) = 1.d0
+          
+      do i = 1,3
+      do j = 1,3
+         M2(i,j) =1.d0
+      end do
+      end do
+          
+      Kb =  (pt/3)*((1+e0)/k)*exp(-1*((1+e0)*ekk/k)) - (2*G/3)  
+      ddsdde = G*M1 + Kb*M2     
+      
+          
       endif
 !
 !     NOTE: ABAQUS uses engineering shear strains,
