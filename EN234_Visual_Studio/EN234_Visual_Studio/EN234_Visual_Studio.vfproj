@@ -110,9 +110,8 @@
 		<File RelativePath="..\..\EN234_FEA\user_codes\modules\Element_Utilities.f90"/></Filter>
 		<Filter Name="Source">
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_tecplot_interface.f90"/>
-		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_2D.for"/>
+		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_cahn_hillard.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_linelastic_3d.for"/>
-		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_umat_elastic.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_vuel.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_vumat.f90"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\convergencecheck.f90"/>
@@ -125,5 +124,6 @@
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_mesh.f90"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_prescribeddof.f90"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_prescribedforce.f90"/>
-		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_print_cahn_hilliard.f90"/></Filter></Filter></Files>
+		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_print_cahn_hilliard.f90"/>
+		<File RelativePath="..\..\..\..\ABAQUS.CAE\usermat.for"/></Filter></Filter></Files>
 	<Globals/></VisualStudioProject>

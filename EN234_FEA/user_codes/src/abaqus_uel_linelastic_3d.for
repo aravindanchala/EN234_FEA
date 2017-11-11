@@ -13,7 +13,7 @@
 !
 !=========================== ABAQUS format user element subroutine ===================
 
-      SUBROUTINE UEL(RHS,AMATRX,SVARS,ENERGY,NDOFEL,NRHS,NSVARS,
+      SUBROUTINE UEL_3d(RHS,AMATRX,SVARS,ENERGY,NDOFEL,NRHS,NSVARS,
      1     PROPS,NPROPS,COORDS,MCRD,NNODE,U,DU,V,A,JTYPE,TIME,DTIME,
      2     KSTEP,KINC,JELEM,PARAMS,NDLOAD,JDLTYP,ADLMAG,PREDEF,NPREDF,
      3     LFLAGS,MLVARX,DDLMAG,MDLOAD,PNEWDT,JPROPS,NJPROP,PERIOD)
@@ -190,6 +190,7 @@
         ENERGY(2) = ENERGY(2)
      1   + 0.5D0*dot_product(stress,strain)*w(kint)*determinant           ! Store the elastic strain energy
 
+     
         if (NSVARS>=n_points*6) then   ! Store stress at each integration point (if space was allocated to do so)
             SVARS(6*kint-5:6*kint) = stress(1:6)
         endif
@@ -239,7 +240,7 @@
 
       return
 
-      END SUBROUTINE UEL
+      END SUBROUTINE UEL_3d
 
 
       subroutine abq_UEL_3D_integrationpoints(n_points, n_nodes, xi, w)
