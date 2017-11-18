@@ -114,6 +114,7 @@
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_linelastic_3d.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_vuel.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_vumat.f90"/>
+		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_vumat_viscoplastic.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\convergencecheck.f90"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\el_linelast_3Dbasic.f90"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\new_user_element_stub.f90"/>
@@ -125,5 +126,6 @@
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_prescribeddof.f90"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_prescribedforce.f90"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_print_cahn_hilliard.f90"/>
+		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_print_hypoelastic.f90"/>
 		<File RelativePath="..\..\..\..\ABAQUS.CAE\usermat.for"/></Filter></Filter></Files>
 	<Globals/></VisualStudioProject>
