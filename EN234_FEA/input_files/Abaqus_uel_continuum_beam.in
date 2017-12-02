@@ -20,7 +20,7 @@
 %      Specify which nodal DOF are displacements.  In the example, DOF 1 is the x displacement, 2 is the y displacement, 3 is the z displacement
        DISPLACEMENT DOF, 1, 2
 %    Enter x,y,z coords of nodes.   The node number is optional, and is ignored in the code.
-         COORDINATES
+       COORDINATES
 %  Coords 
       1,           0.,           0.
       2,           1.,           0.
@@ -111,10 +111,10 @@
 
 %  Print the initial mesh to a file named initial_mesh.dat
 
-   PRINT INITIAL MESH, Output_files\initial_mesh.dat
+%   PRINT INITIAL MESH, Output_files\initial_mesh.dat
 
-%   TIME, VALUE, 0.d0        % Use this to specify the initial time
-%   TIME, INCREMENT, 0.01d0  % Use this to specify a time increment (often needed for check stiffness)
+   TIME, VALUE, 0.d0        % Use this to specify the initial time
+   TIME, INCREMENT, 0.01d0  % Use this to specify a time increment (often needed for check stiffness)
 
 %   The CHECK STIFFNESS key tests the element subroutine to ensure that
 %   the residual force vector is consistent with the stiffness
